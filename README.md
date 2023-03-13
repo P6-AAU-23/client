@@ -3,4 +3,6 @@
 this is the repository for the client site of the the whiteboard app
 
 ### Image of the app
-<img src="./readmeImages/appStart.png" width="300" />
+<p align="center">
+  <img src="./readmeImages/appStart.png" width="300" />
+</p>
