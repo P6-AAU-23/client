@@ -7,13 +7,25 @@
     android:id="@+id/linearLayout"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:layout_centerInParent="true">
+    android:layout_centerInParent="true"
+    android:background="#282a36">
 
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:textAlignment="center"
+        android:textSize="25sp"
+        android:textColor="@color/white"
+        android:background="#44475a"
+        android:text="Real-time whiteboard app"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/openCameraBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:backgroundTint="#6272a4"
         android:padding="40sp"
         android:text="Capture whiteboard"
         android:textSize="20sp"
