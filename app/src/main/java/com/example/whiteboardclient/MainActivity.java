@@ -11,13 +11,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-public class Start extends AppCompatActivity {
+import java.util.Objects;
+
+public class MainActivity extends AppCompatActivity {
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start);
         addCaptureBtnListener();
+        Objects.requireNonNull(getSupportActionBar()).hide();
     }
 
     private void addCaptureBtnListener(){
