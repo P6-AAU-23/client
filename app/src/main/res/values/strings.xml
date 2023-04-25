@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">whiteboardClient</string>
+    <string name="hint_rtmp">rtmp://yourendpoint</string>
+    <string name="startCapturingBtn">Start capturing</string>
 </resources>

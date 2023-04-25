@@ -48,7 +48,7 @@
         android:layout_gravity="right"
         android:backgroundTint="#6272a4"
         android:enabled="false"
-        android:text="Start capturing" />
+        android:text="@string/startCapturingBtn" />
 
 
 </FrameLayout>
