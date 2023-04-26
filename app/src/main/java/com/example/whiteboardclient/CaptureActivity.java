@@ -2,6 +2,7 @@ package com.example.whiteboardclient;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -40,7 +41,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class CaptureActivity extends AppCompatActivity
-        implements ConnectCheckerRtmp, SurfaceHolder.Callback, View.OnClickListener {
+        implements ConnectCheckerRtmp, SurfaceHolder.Callback {
 
     private Executor executor = Executors.newSingleThreadExecutor();
     private PreviewView previewView;
@@ -66,13 +67,16 @@ public class CaptureActivity extends AppCompatActivity
         SurfaceView surfaceView = findViewById(R.id.surfaceview);
 
         button = findViewById(R.id.startCapturingBtn);
-        button.setOnClickListener(this);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                connectToServer();
+            }
+        });
 
 
-        //this will allow the user to type in their own ip, but for testing its been set to a default state in onClick
-        //url = findViewById(R.id.et_rtp_url);
-        //url = "findViewById(R.id.et_rtp_url);";
-        //url.setHint(R.string.hint_rtmp);
+        url = findViewById(R.id.et_rtp_url);
+        url.setHint(R.string.hint_rtmp);
+
         rtmpCamera1 = new RtmpCamera1(surfaceView, this);
         rtmpCamera1.setReTries(10);
         surfaceView.getHolder().addCallback(this);
@@ -139,30 +143,17 @@ public class CaptureActivity extends AppCompatActivity
 
     }
 
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.startCapturingBtn:
-                if (!rtmpCamera1.isStreaming()) {
-                    if (rtmpCamera1.isRecording()
-                            || rtmpCamera1.prepareAudio() && rtmpCamera1.prepareVideo()) {
-                        button.setText("hehe");
-                        //rtmpCamera2.startStream("rtmp://127.0.0.1:1935");
-                        rtmpCamera1.startStream("rtmp://10.0.2.2:1935/live/test");
-                    } else {
-                        Toast.makeText(this, "other sus error",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    button.setText(R.string.startCapturingBtn);
-                    rtmpCamera1.stopStream();
-                }
-                break;
-            default:
-                Toast.makeText(this, "sus error",
+    public void connectToServer() {
+        if (!rtmpCamera1.isStreaming()) {
+            if (rtmpCamera1.prepareVideo()) {
+                rtmpCamera1.startStream(url.getText().toString());
+            } else {
+                Toast.makeText(this, "other sus error",
                         Toast.LENGTH_SHORT).show();
-                break;
+            }
+        } else {
+            button.setText(R.string.startCapturingBtn);
+            rtmpCamera1.stopStream();
         }
     }
 

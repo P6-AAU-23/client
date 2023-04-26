@@ -34,7 +34,7 @@
         android:layout_gravity="right"
         android:layout_marginBottom="16dp"
         android:backgroundTint="@color/light_blue"
-        android:enabled="false"
+        android:enabled="true"
         android:text="@string/startCapturingBtn"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
