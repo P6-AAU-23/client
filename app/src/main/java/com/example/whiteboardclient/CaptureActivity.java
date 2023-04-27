@@ -2,106 +2,123 @@ package com.example.whiteboardclient;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.view.View;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.Camera;
-import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageCapture;
-import androidx.camera.core.Preview;
-import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.camera.view.PreviewView;
-import androidx.core.content.ContextCompat;
-import androidx.lifecycle.LifecycleOwner;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.pedro.rtmp.utils.ConnectCheckerRtmp;
+import com.pedro.rtplibrary.rtmp.RtmpCamera1;
 
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
-public class CaptureActivity extends AppCompatActivity {
-    private Executor executor = Executors.newSingleThreadExecutor();
-    private PreviewView previewView;
-    private ImageView capturedImageView;
+public class CaptureActivity extends AppCompatActivity
+        implements ConnectCheckerRtmp, SurfaceHolder.Callback {
 
+    private RtmpCamera1 rtmpCamera1;
+    private EditText url;
+    private Button streamButton;
+    final int CONNECT_RE_TRIES = 10;
 
     @SuppressLint("WrongViewCast")
     @Override
     @androidx.camera.core.ExperimentalGetImage
     protected void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.capturescreen);
+        setContentView(R.layout.capture_display);
         Objects.requireNonNull(getSupportActionBar()).hide();
+        SurfaceView surfaceView = findViewById(R.id.surfaceview);
 
-        previewView = findViewById(R.id.cameraPreview);
-        capturedImageView = findViewById(R.id.capturedImage);
-
-        addBtnListeners();
-        startCamera();
-
-    }
-
-    private void addBtnListeners(){
-        Button cornerButton = findViewById(R.id.setCornersBtn);
-        Button capturingButton = findViewById(R.id.startCapturingBtn);
-        Button changeImageBtn = findViewById(R.id.changeImageBtn);
-
-        changeImageBtn.setOnClickListener(view -> {
-
-        });
-
-        cornerButton.setOnClickListener(view -> {
-        });
-
-        capturingButton.setOnClickListener(view -> {
-        });
-    }
-
-    private void startCamera() {
-
-        final ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-
-        cameraProviderFuture.addListener(() -> {
-            try {
-
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                bindPreview(cameraProvider);
-
-            } catch (ExecutionException | InterruptedException e) {
-                // No errors need to be handled for this Future.
-                // This should never be reached.
+        streamButton = findViewById(R.id.streamButton);
+        streamButton.setOnClickListener(view -> {
+            if (!rtmpCamera1.isStreaming()) {
+                if (rtmpCamera1.prepareVideo()) {
+                    rtmpCamera1.startStream(url.getText().toString());
+                }
+            } else {
+                rtmpCamera1.stopStream();
             }
-        }, ContextCompat.getMainExecutor(this));
+        });
+
+        url = findViewById(R.id.et_rtp_url);
+        url.setHint(R.string.hint_rtmp);
+
+        rtmpCamera1 = new RtmpCamera1(surfaceView, this);
+        rtmpCamera1.setReTries(CONNECT_RE_TRIES);
+        surfaceView.getHolder().addCallback(this);
     }
 
-    void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+    }
+    
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+        rtmpCamera1.startPreview();
+    }
 
-        Preview preview = new Preview.Builder()
-                .build();
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        if (rtmpCamera1.isStreaming()) {
+            rtmpCamera1.stopStream();
+        }
+        rtmpCamera1.stopPreview();
+    }
 
-        CameraSelector cameraSelector = new CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-                .build();
+    @Override
+    public void onAuthErrorRtmp() {
+    }
 
-        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .build();
+    @Override
+    public void onAuthSuccessRtmp() {
+    }
 
-        ImageCapture.Builder builder = new ImageCapture.Builder();
+    @Override
+    public void onConnectionFailedRtmp(@NonNull String reason) {
+        runOnUiThread(() -> {
+            long waitTime = 5000;
+            if (rtmpCamera1.reTry(waitTime, reason, null)) {
+                Toast.makeText(CaptureActivity.this, "Retry", Toast.LENGTH_SHORT)
+                        .show();
+            } else {
+                Toast.makeText(CaptureActivity.this, "Connection failed. " + reason, Toast.LENGTH_SHORT).show();
+                rtmpCamera1.stopStream();
+                streamButton.setText(R.string.start_streaming);
+            }
+        });
+    }
 
-        final ImageCapture imageCapture = builder
-                .setTargetRotation(this.getDisplay().getRotation())
-                .build();
+    @Override
+    public void onConnectionStartedRtmp(@NonNull String s) {
+        streamButton.setEnabled(false);
+    }
 
-        preview.setSurfaceProvider(previewView.getSurfaceProvider());
+    @Override
+    public void onConnectionSuccessRtmp() {
+        runOnUiThread(() -> {
+            Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+            streamButton.setText(R.string.stop_streaming);
+            streamButton.setEnabled(true);
+        });
+    }
 
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageAnalysis, imageCapture);
+    @Override
+    public void onDisconnectRtmp() {
+        runOnUiThread(() -> {
+            if (rtmpCamera1.isStreaming()) {
+                Toast.makeText(this, "Disconnected", Toast.LENGTH_SHORT).show();
+            }
+            streamButton.setText(R.string.start_streaming);
+            streamButton.setEnabled(true);
+        });
+    }
 
+    @Override
+    public void onNewBitrateRtmp(long l) {
     }
 }
