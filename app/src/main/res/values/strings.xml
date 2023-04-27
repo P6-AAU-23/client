@@ -2,4 +2,6 @@
     <string name="app_name">whiteboardClient</string>
     <string name="hint_rtmp">rtmp://yourendpoint</string>
     <string name="startCapturingBtn">Start capturing</string>
+    <string name="start_streaming">Start streaming</string>
+    <string name="stop_streaming">Stop streaming</string>
 </resources>

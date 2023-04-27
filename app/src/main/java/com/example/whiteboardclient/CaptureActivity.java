@@ -21,8 +21,9 @@ public class CaptureActivity extends AppCompatActivity
         implements ConnectCheckerRtmp, SurfaceHolder.Callback {
 
     private RtmpCamera1 rtmpCamera1;
-    private Button button;
     private EditText url;
+    private Button streamButton;
+    final int CONNECT_RE_TRIES = 10;
 
     @SuppressLint("WrongViewCast")
     @Override
@@ -31,43 +32,31 @@ public class CaptureActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.capture_display);
         Objects.requireNonNull(getSupportActionBar()).hide();
-
         SurfaceView surfaceView = findViewById(R.id.surfaceview);
 
-        button = findViewById(R.id.startCapturingBtn);
-        button.setOnClickListener(v -> connectToServer());
-
+        streamButton = findViewById(R.id.streamButton);
+        streamButton.setOnClickListener(view -> {
+            if (!rtmpCamera1.isStreaming()) {
+                if (rtmpCamera1.prepareVideo()) {
+                    rtmpCamera1.startStream(url.getText().toString());
+                }
+            } else {
+                rtmpCamera1.stopStream();
+            }
+        });
 
         url = findViewById(R.id.et_rtp_url);
         url.setHint(R.string.hint_rtmp);
 
         rtmpCamera1 = new RtmpCamera1(surfaceView, this);
-        rtmpCamera1.setReTries(10);
+        rtmpCamera1.setReTries(CONNECT_RE_TRIES);
         surfaceView.getHolder().addCallback(this);
-
     }
-
-    public void connectToServer() {
-        if (!rtmpCamera1.isStreaming()) {
-            if (rtmpCamera1.prepareVideo()) {
-                rtmpCamera1.startStream(url.getText().toString());
-            } else {
-                Toast.makeText(this, "other sus error",
-                        Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            button.setText(R.string.startCapturingBtn);
-            rtmpCamera1.stopStream();
-        }
-    }
-
-
-
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-
     }
+    
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
         rtmpCamera1.startPreview();
@@ -77,53 +66,59 @@ public class CaptureActivity extends AppCompatActivity
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
         if (rtmpCamera1.isStreaming()) {
             rtmpCamera1.stopStream();
-            //button.setText(getResources().getString(R.id.startCapturingBtn));
         }
         rtmpCamera1.stopPreview();
     }
 
     @Override
     public void onAuthErrorRtmp() {
-
     }
 
     @Override
     public void onAuthSuccessRtmp() {
-
     }
 
     @Override
-    public void onConnectionFailedRtmp(@NonNull String s) {
+    public void onConnectionFailedRtmp(@NonNull String reason) {
         runOnUiThread(() -> {
-            //Wait 5s and retry connect stream
-            if (rtmpCamera1.reTry(5000, s, null)) { //string > reason
+            long waitTime = 5000;
+            if (rtmpCamera1.reTry(waitTime, reason, null)) {
                 Toast.makeText(CaptureActivity.this, "Retry", Toast.LENGTH_SHORT)
                         .show();
             } else {
-                Toast.makeText(CaptureActivity.this, "Connection failed. " + s, Toast.LENGTH_SHORT).show();
+                Toast.makeText(CaptureActivity.this, "Connection failed. " + reason, Toast.LENGTH_SHORT).show();
                 rtmpCamera1.stopStream();
-                button.setText(R.string.startCapturingBtn);
+                streamButton.setText(R.string.start_streaming);
             }
         });
     }
 
     @Override
     public void onConnectionStartedRtmp(@NonNull String s) {
-
+        streamButton.setEnabled(false);
     }
 
     @Override
     public void onConnectionSuccessRtmp() {
-
+        runOnUiThread(() -> {
+            Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+            streamButton.setText(R.string.stop_streaming);
+            streamButton.setEnabled(true);
+        });
     }
 
     @Override
     public void onDisconnectRtmp() {
-
+        runOnUiThread(() -> {
+            if (rtmpCamera1.isStreaming()) {
+                Toast.makeText(this, "Disconnected", Toast.LENGTH_SHORT).show();
+            }
+            streamButton.setText(R.string.start_streaming);
+            streamButton.setEnabled(true);
+        });
     }
 
     @Override
     public void onNewBitrateRtmp(long l) {
-
     }
 }
