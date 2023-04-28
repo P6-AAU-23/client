@@ -2,6 +2,7 @@ package com.example.whiteboardclient;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Button;
@@ -81,14 +82,17 @@ public class CaptureActivity extends AppCompatActivity
     @Override
     public void onConnectionFailedRtmp(@NonNull String reason) {
         runOnUiThread(() -> {
+            streamButton.setEnabled(false);
             long waitTime = 5000;
-            if (rtmpCamera1.reTry(waitTime, reason, null)) {
+            Log.d("debug", reason);
+            if (rtmpCamera1.reTry(waitTime, reason)) {
                 Toast.makeText(CaptureActivity.this, "Retry", Toast.LENGTH_SHORT)
                         .show();
             } else {
-                Toast.makeText(CaptureActivity.this, "Connection failed. " + reason, Toast.LENGTH_SHORT).show();
+                Toast.makeText(CaptureActivity.this, "Connection failed: " + reason, Toast.LENGTH_SHORT).show();
                 rtmpCamera1.stopStream();
                 streamButton.setText(R.string.start_streaming);
+                streamButton.setEnabled(true);
             }
         });
     }
@@ -110,9 +114,7 @@ public class CaptureActivity extends AppCompatActivity
     @Override
     public void onDisconnectRtmp() {
         runOnUiThread(() -> {
-            if (rtmpCamera1.isStreaming()) {
-                Toast.makeText(this, "Disconnected", Toast.LENGTH_SHORT).show();
-            }
+            Toast.makeText(this, "Disconnected", Toast.LENGTH_SHORT).show();
             streamButton.setText(R.string.start_streaming);
             streamButton.setEnabled(true);
         });
