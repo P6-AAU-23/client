@@ -1,6 +1,6 @@
-# client
+# producer-client
 
-this is the repository for the client site of the the whiteboard app
+this is the repository for the producer-client of the the whiteboard app
 
 ### Image of the app
 <p align="center">
